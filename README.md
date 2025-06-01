@@ -83,13 +83,13 @@ PWDE-JOB is a specialized job board platform that connects employers with qualif
 ## Progress Tracking
 
 ### Completed
-- [ / ] Project initialization
-- [ / ] Basic project structure
+- [x] Project initialization
+- [x] Basic project structure
 
 ### In Progress
-- [ / ] Authentication system
-- [ / ] Database schema design
-- [ ] API endpoints planning
+- [x] Authentication system
+- [x] Database schema design
+- [] API endpoints planning
 
 ### Upcoming
 - [ ] Job recommendation engine
