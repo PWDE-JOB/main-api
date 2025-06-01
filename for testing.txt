@@ -1,0 +1,20 @@
+{
+  "first_name": "Testing Name",
+  "middle_name": "Cruz",
+  "last_name": "Lopez",
+  "email": "test12@gmail.com",
+  "password": "1122334455",
+  "disability": "Pilay",
+  "skills": [
+    "SEO","Typing","Figma"
+  ]
+}
+
+
+{
+  "first_name": "John",
+  "middle_name": "Dela",
+  "last_name": "Crixx",
+  "email": "rarara12@gmail.com",
+  "password": "1122334455"
+}
