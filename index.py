@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -20,6 +20,7 @@ load_dotenv()
 
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_PRIVATE_KEY")
+service_key = os.getenv("SUPBASE_SERVICE_KEY")
 
 
 @app.get("/")
@@ -216,7 +217,7 @@ async def login(user: loginCreds):
             auth_userID = response.user.id
 
             session_data = {
-                "access_token": access_token,
+                "auth_userID": auth_userID,
                 "refresh_token": refresh_token
             }
 
@@ -225,7 +226,7 @@ async def login(user: loginCreds):
 
             if employee_check.data:  # check for presence of data
                 # Store session in Redis with a key prefix
-                await redis.set(auth_userID, json.dumps(session_data), ex=1000)
+                await redis.set(access_token, json.dumps(session_data), ex=3600)
 
                 return {
                     "Status": "Success",
@@ -255,10 +256,50 @@ async def login(user: loginCreds):
         
 #Password reset to be followded after this week
 
+# functions for retriving session or to be speficifc the user ID
+async def getAuthUserIdByToken(redis, access_token):
+    value = await redis.get(access_token)
+    if value:
+        session_data = json.loads(value)
+        return session_data.get("auth_userID")
+    return None
+
+async def getAuthUserIdFromRequest(redis, request: Request):
+    token = request.headers.get("Authorization")
+    if not token or not token.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    
+    access_token = token.split("Bearer ")[1]
+    
+    auth_userID = await getAuthUserIdByToken(redis, access_token)
+    if not auth_userID:
+        raise HTTPException(status_code=401, detail="Session not found in Redis")
+    
+    return auth_userID
+
+
+
+
+# To send an authenticated request to the backend (e.g., /view-profile):
+# Retrieve the access token (from localStorage, sessionStorage, or cookies).
+# Add it to the request header as: Authorization: Bearer <access_token>.
+
+# Example (using Fetch API):
+#   
+#    const accessToken = localStorage.getItem('access_token'); // or from a cookie
+#   
+#    fetch('http://localhost:8000/view-profile', {
+#      method: 'GET',
+#      headers: {
+#        'Authorization': `Bearer ${accessToken}`
+# }
+# })
+
 #profile management
-@app.get("/view-profile/{auth_userID}")
-async def viewProfile(auth_userID: str):
+@app.get("/view-profile")
+async def viewProfile(request: Request):
     try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
         supabase = create_client(url, key)
         
         # print(f"Fetching profile for user_id: {auth_userID}")
@@ -287,3 +328,180 @@ async def viewProfile(auth_userID: str):
             "Message": "Internal Server Error",
             "Details": str(e)
         }
+        
+
+#job shii
+
+#create jobs
+# This endpoint is for empployers to be able create jobs, view al jobs listings they created, view a specific job listinsg details, delete, and update
+from models.model import jobCreation
+@app.post("/create-jobs")
+async def createJob(job: jobCreation, request: Request):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        #check first if the user exist as an employer
+        supabase: Client = create_client(url, service_key)
+        search_id = supabase.table("employers").select("user_id").eq("user_id", auth_userID).single().execute()
+        
+        if search_id:
+            # structure teh data to be created
+            jobs_data = {
+                "user_id": auth_userID,
+                "title": job.title,
+                "job_description": job.description,
+                "skill_1": job.skill_1,
+                "skill_2": job.skill_2,
+                "skill_3": job.skill_3,
+                "skill_4": job.skill_4,
+                "skill_5": job.skill_5,
+                "pwd_friendly": job.pwd_friendly
+            }
+            
+            insert_response = supabase.table("jobs").insert(jobs_data).execute()
+            
+            return{
+                "Status": "Sucessfull",
+                "Message": "Job has been created",
+                "Details": f"{insert_response}"
+            }
+        else:
+            return {
+                "Status": "Error",
+                "Message": "Maybe the employer dosen't exist"
+            }
+    except Exception as e:
+        return{
+            "Status": "Internal Server Error",
+            "Message": "Some sort of error",
+            "Details": f"{e}"
+        }
+
+@app.get("/view-all-jobs")
+async def viewAllJobs(request: Request):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        supabase = create_client(url, key)
+        
+        all_jobs = supabase.table("jobs").select("*").eq("user_id", auth_userID).execute()
+        
+        if all_jobs:
+            return {"jobs": all_jobs.data}
+        
+        return {
+            "Status": "ERROR",
+            "Message": "No Jobs Found"
+        }
+    except Exception as e:
+        return{
+            "Status": "ERROR",
+            "Message": "Internal Server Error",
+            "Details": f"{e}"
+        }
+
+@app.get("/view-job/{id}")
+async def viewSpecificJob(request: Request, id: str):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        
+        supabase = create_client(url, key)
+        
+        job = supabase.table("jobs").select("*").eq("user_id", auth_userID).eq("id", id).execute()
+        
+        if job:
+            return {
+                "Status": "Successfull",
+                "Message": f"Job Number {id} Found",
+                "Details": job.data
+            }
+        return {
+            "Status": "Error",
+            "Message": "Job Not Found"
+        }
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Error",
+            "Details": f"{e}"
+        }
+
+@app.post("/delete-job/{id}")
+async def deleteJob(request: Request, id: str):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        supabase = create_client(url, service_key)
+
+        # Check if the user is an employer
+        search_id = supabase.table("employers").select("user_id").eq("user_id", auth_userID).single().execute()
+
+        if search_id.data and search_id.data["user_id"] == auth_userID:
+            #delete the job
+            delete_job = supabase.table("jobs").delete().eq("id", id).execute()
+            # print(delete_job)
+            
+            if delete_job.data:  # check if any row was actually deleted
+                return {
+                    "Status": "Success",
+                    "Message": f"Job {id} deleted successfully"
+                }
+            else:
+                return {
+                    "Status": "Error",
+                    "Message": f"No job found with id {id} to delete.",
+                    "Details": f"{delete_job}"
+                }
+        else:
+            return {
+                "Status": "Error",
+                "Message": "Employer not found or not authorized."
+            }
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Server Error",
+            "Details": f"{e}"
+        }
+
+from models.model import updateJob
+@app.post("/update-job/{id}")
+async def updateSpecificJob(request: Request, id: str, job: updateJob):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        supabase = create_client(url, service_key)
+
+        # Check if the user is an employer
+        search_id = supabase.table("employers").select("user_id").eq("user_id", auth_userID).single().execute()
+
+        if search_id.data and search_id.data["user_id"] == auth_userID:
+             #build the structure of the update json 
+             new_data = {
+                "user_id": auth_userID,
+                "title": job.title,
+                "job_description": job.description,
+                "skill_1": job.skill_1,
+                "skill_2": job.skill_2,
+                "skill_3": job.skill_3,
+                "skill_4": job.skill_4,
+                "skill_5": job.skill_5,
+                "pwd_friendly": job.pwd_friendly
+             }
+             update_response = supabase.table("jobs").update(new_data).eq("id", id).execute()
+            
+             if update_response.data:
+                 return{
+                     "Status": "Successfull",
+                     "Message": "Update successfull"
+                 }
+             else:
+                 return {
+                     "Status": "Error",
+                     "Message": "Updating not Succesfull",
+                     "Details": f"{update_response}" 
+                 }
+        else:
+            return{
+                "Status": "Error",
+                "Message": "Cant find user",
+                "Details": f"{search_id}" 
+            }
+    except Exception as e:
+        return 0

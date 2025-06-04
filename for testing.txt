@@ -54,7 +54,7 @@ sample output endpoint @app.post("/login-employer"):
   "Stored User ID": "148cc1c6-2e81-4037-913c-7617564baa33"
 }
 
-sample output endpoint @app.get("/view-profile/{auth_userID}"):
+sample output endpoint @app.get("/view-profile"):
 
 {
   "Profile": {
@@ -67,5 +67,62 @@ sample output endpoint @app.get("/view-profile/{auth_userID}"):
     "created_at": "2025-06-03T08:16:25.221844+00:00",
     "id": 3
   }
+}
+
+sample output endpoint @app.get("/create-jobs")
+
+{
+    "Status": "Sucessfull",
+    "Message": "Job has been created",
+    "Details": "data=[{'id': 8, 'user_id': '148cc1c6-2e81-4037-913c-7617564baa33', 'title': 'asfasfdas', 'job_description': 'asfasfas', 'skill_1': 'asfasfas', 'skill_2': 'afsfas', 'skill_3': 'striasng', 'skill_4': 'fsafasf', 'skill_5': 'asffasfas', 'pwd_friendly': True, 'created_at': '2025-06-04T06:23:51.104274+00:00'}] count=None"
+}
+
+sample output endpoint @app.get("/view-all-jobs")
+
+{
+    "jobs": [
+        {
+            "id": 8,
+            "user_id": "148cc1c6-2e81-4037-913c-7617564baa33",
+            "title": "asfasfdas",
+            "job_description": "asfasfas",
+            "skill_1": "asfasfas",
+            "skill_2": "afsfas",
+            "skill_3": "striasng",
+            "skill_4": "fsafasf",
+            "skill_5": "asffasfas",
+            "pwd_friendly": true,
+            "created_at": "2025-06-04T06:23:51.104274+00:00"
+        }
+    ]
+}
+
+sample output endpoint @app.get("/view-job/{id}")
+
+{
+    "Status": "Successfull",
+    "Message": "Job Number 8 Found",
+    "Details": [
+        {
+            "id": 8,
+            "user_id": "148cc1c6-2e81-4037-913c-7617564baa33",
+            "title": "asfasfdas",
+            "job_description": "asfasfas",
+            "skill_1": "asfasfas",
+            "skill_2": "afsfas",
+            "skill_3": "striasng",
+            "skill_4": "fsafasf",
+            "skill_5": "asffasfas",
+            "pwd_friendly": true,
+            "created_at": "2025-06-04T06:23:51.104274+00:00"
+        }
+    ]
+}
+
+
+sample output endpoint @app.post("/delete-job/{id}")
+{
+    "Status": "Success",
+    "Message": "Job 9 deleted successfully"
 }
 
