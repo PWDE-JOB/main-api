@@ -4,6 +4,11 @@ A job board platform specifically designed for People with Disabilities (PWD)
 ## Overview
 PWDE-JOB is a specialized job board platform that connects employers with qualified PWD candidates. The platform provides a comprehensive suite of features for both job seekers and employers, with a focus on accessibility and inclusivity.
 
+**Click the badge to see api docuemantion**
+(or check it user its in the docs folder)
+
+[![Docs](https://img.shields.io/badge/docs-GitBook-brightgreen)](https://my-docuemnations.gitbook.io/pwde-job-api-documentation#authentication-endpoints)
+
 ## Features
 
 ### Job Seeker Features
