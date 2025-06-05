@@ -21,6 +21,17 @@ class loginCreds(BaseModel):
     email: str
     password: str
 
+class updateEmployer(BaseModel):
+    first_name: str
+    middle_name: str
+    last_name: str
+    
+class updateEmployee(BaseModel):
+    first_name: str
+    middle_name: str
+    last_name: str
+    disability: str
+    skills: List[str]
 
 class jobCreation(BaseModel):
     title: str
@@ -31,6 +42,7 @@ class jobCreation(BaseModel):
     skill_4: str
     skill_5: str
     pwd_friendly: bool
+    salary: float
     
 class updateJob(BaseModel):
     title: str
@@ -41,3 +53,4 @@ class updateJob(BaseModel):
     skill_4: str
     skill_5: str
     pwd_friendly: bool
+    salary: float

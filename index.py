@@ -160,7 +160,7 @@ async def login(user: loginCreds):
             auth_userID = response.user.id
 
             session_data = {
-                "access_token": access_token,
+                "auth_userID": auth_userID,
                 "refresh_token": refresh_token
             }
 
@@ -169,7 +169,7 @@ async def login(user: loginCreds):
 
             if employee_check.data:  # check for presence of data
                 # Store session in Redis with a key prefix
-                await redis.set(auth_userID, json.dumps(session_data), ex=1000)
+                await redis.set(access_token, json.dumps(session_data), ex=None)
 
                 return {
                     "Status": "Success",
@@ -328,7 +328,98 @@ async def viewProfile(request: Request):
             "Message": "Internal Server Error",
             "Details": str(e)
         }
+
+# Profile Update
+#this will update only name, skills, and disability 
+from models.model import updateEmployer, updateEmployee
+@app.post("/update-profile/employer")
+async def updateProfile(request: Request, update_employer: updateEmployer):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        supabase = create_client(url, service_key)
         
+        # Check if the user is an employer
+        search_employer = supabase.table("employers").select("user_id").eq("user_id", auth_userID).single().execute()
+        
+        if search_employer.data and search_employer.data["user_id"] == auth_userID:
+            updated_details ={
+                "first_name": update_employer.first_name,
+                "middle_name": update_employer.middle_name,
+                "last_name": update_employer.last_name
+            }
+            
+            update_employer_res = supabase.table("employers").update(updated_details).eq("user_id", auth_userID).execute()
+            
+            if update_employer_res.data:
+                return{
+                     "Status": "Successfull",
+                     "Message": "Update successfull"
+                 }
+            else:
+                return {
+                     "Status": "Error",
+                     "Message": "Updating not Succesfull",
+                     "Details": f"{update_employer_res}" 
+                 }
+        else:
+            return{
+                "Status": "Error",
+                "Message": "Cant find user",
+                "Details": f"{search_employer}" 
+            }
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Server Error",
+            "Details": f"{e}"
+        }
+
+
+
+@app.post("/update-profile/employee")
+async def updateProfile(request: Request, update_employee: updateEmployee):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        supabase = create_client(url, service_key)
+        
+        # Check if the user is an employer
+        search_employee = supabase.table("employee").select("user_id").eq("user_id", auth_userID).single().execute()
+        
+        if search_employee.data and search_employee.data["user_id"] == auth_userID:
+            updated_details ={
+                "first_name": update_employee.first_name,
+                "middle_name": update_employee.middle_name,
+                "last_name": update_employee.last_name,
+                "disability": update_employee.disability,
+                "skills": str(update_employee.skills)
+                
+            }
+            
+            update_employee_res = supabase.table("employee").update(updated_details).eq("user_id", auth_userID).execute()
+            
+            if update_employee_res.data:
+                return{
+                     "Status": "Successfull",
+                     "Message": "Update successfull"
+                 }
+            else:
+                return {
+                     "Status": "Error",
+                     "Message": "Updating not Succesfull",
+                     "Details": f"{update_employee_res}" 
+                 }
+        else:
+            return{
+                "Status": "Error",
+                "Message": "Cant find user",
+                "Details": f"{search_employee}" 
+            }
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Server Error",
+            "Details": f"{e}"
+        }
 
 #job shii
 
@@ -354,7 +445,8 @@ async def createJob(job: jobCreation, request: Request):
                 "skill_3": job.skill_3,
                 "skill_4": job.skill_4,
                 "skill_5": job.skill_5,
-                "pwd_friendly": job.pwd_friendly
+                "pwd_friendly": job.pwd_friendly,
+                "salary": job.salary
             }
             
             insert_response = supabase.table("jobs").insert(jobs_data).execute()
@@ -482,7 +574,8 @@ async def updateSpecificJob(request: Request, id: str, job: updateJob):
                 "skill_3": job.skill_3,
                 "skill_4": job.skill_4,
                 "skill_5": job.skill_5,
-                "pwd_friendly": job.pwd_friendly
+                "pwd_friendly": job.pwd_friendly,
+                "salary": job.salary
              }
              update_response = supabase.table("jobs").update(new_data).eq("id", id).execute()
             
@@ -504,4 +597,176 @@ async def updateSpecificJob(request: Request, id: str, job: updateJob):
                 "Details": f"{search_id}" 
             }
     except Exception as e:
-        return 0
+        return {
+            "Status": "Error",
+            "Message": "Internal Server Error",
+            "Details":f"{e}"
+        }
+          
+#MAIN ALGO WORKS (Content absed filtering + collaborative filtering)
+import ast
+@app.get("/reco-jobs")
+async def reccomendJobs(request: Request):
+    try:
+        # Get the user details
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        supabase = create_client(url, key)
+
+        # Fetch the user details
+        search_user = supabase.table("employee").select("*").eq("user_id", auth_userID).single().execute()
+
+        if not search_user or not search_user.data:
+            return {
+                "Status": "Error",
+                "Message": "Can't find user"
+            }
+
+        # user_id = search_user.data.get("user_id")
+        disability = search_user.data.get("disability")
+
+        # Parse the skills
+        user_skills_set = set()
+        skills_raw = search_user.data.get("skills", "[]")
+        try:
+            skills_list = ast.literal_eval(skills_raw)
+        except Exception:
+            skills_list = []
+
+        for skill in skills_list:
+            if isinstance(skill, str):
+                user_skills_set.add(skill.strip().lower())
+
+        # Fetch jobs based on disability
+        if disability == "None":
+            jobs_response = supabase.table("jobs").select("*").execute()
+            jobs_data = jobs_response.data or []
+        else:
+            jobs_response = supabase.table("jobs").select("*").eq("pwd_friendly", True).execute()
+            jobs_data = jobs_response.data or []
+
+        # Recommendations
+        recommendations = []
+
+        for job in jobs_data:
+            # Extract job skills
+            job_skills = []
+            for i in range(1, 6):
+                skill = job.get(f"skill_{i}", "")
+                if isinstance(skill, str) and skill.strip():
+                    job_skills.append(skill.strip().lower())
+
+            job_skills_set = set(job_skills)
+
+            # Calculate skill match score
+            matched_skills_set = user_skills_set & job_skills_set
+            matched_skills_count = len(matched_skills_set)
+
+            if job_skills_set:
+                skill_match_score = matched_skills_count / len(job_skills_set)
+            else:
+                skill_match_score = 0
+
+            # Create a copy of the job details and add match data
+            # Exclude jobs with zero match score
+            if skill_match_score > 0:
+                job_copy = job.copy()
+                job_copy["skill_match_score"] = skill_match_score
+                job_copy["matched_skills"] = list(matched_skills_set)
+                recommendations.append(job_copy)
+                
+        # Sort and return top 5 recommendations
+        recommendations.sort(key=lambda x: x["skill_match_score"], reverse=True)
+        
+        for job in recommendations:
+            job_id = job["id"]
+
+            # Check if this record already exists
+            existing_record = supabase.table("employee_history").select("id").eq("user_id", auth_userID).eq("job_id", job_id).execute()
+
+            if not existing_record.data:
+                # Insert the new history record
+                supabase.table("employee_history").insert({
+                    "user_id": auth_userID,
+                    "job_id": job_id
+                }).execute()
+
+        return {
+            "recommendations": recommendations
+        }
+
+    except Exception as e:
+        return {
+            "error": str(e)
+        }
+
+# apply to a job
+@app.post("/apply-job/{job_id}")
+async def applyingForJob(job_id: str, request: Request):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        
+        supabase = create_client(url, key)
+        
+        # check the user id in auth)userID is an employer
+        
+        check_user = supabase.table("employee").select("user_id").eq("user_id", auth_userID).single().execute()
+        
+        if check_user.data and check_user.data["user_id"] == auth_userID:
+            apply_job = supabase.table("employee_history").update({"applied": True}).eq("job_id", job_id).eq("user_id", auth_userID).execute()
+            
+            if apply_job.data:
+                return{
+                    "Status": "Successfull",
+                    "Message": f"You applied to job {job_id}"
+                }
+            else:
+                return {
+                    "Status": "Error",
+                    "Message": "Error/Failed in applying"
+                }
+        else:
+            return {
+                "Status": "Error",
+                "Message": "Can't find the user"
+            }
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Server Error",
+            "Details": f"{e}"
+        }
+
+# view all apllicants of a job listing
+@app.get("/job/{job_id}/applicants")
+async def viewAllApplicantsInJobListing(request: Request, job_id: str):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        
+        supabase = create_client(url, key)
+        
+        check_user = supabase.table("employers").select("user_id").eq("user_id", auth_userID).single().execute()
+        
+        if check_user.data and check_user.data["user_id"] == auth_userID:
+            get_all_applicants = supabase.table("employee_history").select("*").eq("job_id", job_id).eq("applied", True).execute()
+            
+            if get_all_applicants.data:
+                return {
+                    "Status": "Successfull",
+                    "Applicants": get_all_applicants.data
+                }
+            else:
+                return {
+                    "Status": "Successfull",
+                    "Message": "No Applicants"
+                }
+        else:
+            return {
+                "Status": "Error",
+                "Message": "User not Found"
+            }
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Server Error",
+            "Details": f"{e}"
+        }

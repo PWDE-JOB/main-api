@@ -87,7 +87,7 @@ PWDE-JOB is a specialized job board platform that connects employers with qualif
 
 ## Progress Tracking
 
-### Overall Progress: 53.85% Complete
+### Overall Progress: 61.54% Complete
 
 ### Completed
 - [x] Project initialization
@@ -107,9 +107,14 @@ PWDE-JOB is a specialized job board platform that connects employers with qualif
   - View specific job
   - Delete jobs
   - Update jobs
+- [x] Job Application System
+  - Apply for jobs
+  - View job applicants
+- [x] Job Recommendation System
+  - Skill-based matching
+  - PWD-friendly filtering
 
 ### In Progress
-- [ ] Job recommendation engine 
 - [ ] Advanced profile management system
   - Resume upload
   - Skills management
@@ -122,6 +127,16 @@ PWDE-JOB is a specialized job board platform that connects employers with qualif
   - Performance metrics
 - [ ] Zoom integration
 - [ ] Resume screening system
+- [ ] Assessment/Test system
+- [ ] Admin/Moderation system
+
+### Upcoming Features
+- [ ] Password reset system
+- [ ] Email verification
+- [ ] Profile picture upload
+- [ ] Job search and filters
+- [ ] Application tracking
+- [ ] Interview scheduling
 
 ## Technical Stack
 - Backend: Python
