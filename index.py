@@ -174,8 +174,7 @@ async def login(user: loginCreds):
                 return {
                     "Status": "Success",
                     "Message": "Login successful. Session stored in Redis.",
-                    "App User ID": auth_userID,
-                    "Debug Session Key": f"session:{auth_userID}",
+                    "Token": access_token,
                     "Stored User ID": auth_userID
                 }
             else:
@@ -226,13 +225,12 @@ async def login(user: loginCreds):
 
             if employee_check.data:  # check for presence of data
                 # Store session in Redis with a key prefix
-                await redis.set(access_token, json.dumps(session_data), ex=3600)
+                await redis.set(access_token, json.dumps(session_data), ex=None)
 
                 return {
                     "Status": "Success",
                     "Message": "Login successful. Session stored in Redis.",
-                    "App User ID": auth_userID,
-                    "Debug Session Key": f"session:{auth_userID}",
+                    "Token": access_token,
                     "Stored User ID": auth_userID
                 }
             else:
