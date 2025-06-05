@@ -121,6 +121,27 @@
   }
   ```
 
+#### Logout
+- **Endpoint**: `POST /logout`
+- **Description**: Log out the current user by invalidating their session token
+- **Headers Required**: 
+  - `Authorization: Bearer <access_token>`
+- **Sample Response**:
+  ```json
+  {
+    "Status": "Success",
+    "Message": "Successfully logged out"
+  }
+  ```
+- **Error Response**:
+  ```json
+  {
+    "Status": "ERROR",
+    "Message": "Logout failed",
+    "Details": "Error details here"
+  }
+  ```
+
 ### Profile Management
 
 #### Update Employee Profile

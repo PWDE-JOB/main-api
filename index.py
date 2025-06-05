@@ -768,3 +768,35 @@ async def viewAllApplicantsInJobListing(request: Request, job_id: str):
             "Message": "Internal Server Error",
             "Details": f"{e}"
         }
+
+@app.post("/logout")
+async def logout(request: Request):
+    # Debug: Print all headers
+    # print("All headers:", dict(request.headers))
+    
+    token = request.headers.get("Authorization")
+    # print("Raw Authorization header:", token)
+    
+    if not token or not token.startswith("Bearer "):
+        # print("Token validation failed - token missing or invalid format")
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    
+    access_token = token.split("Bearer ")[1]
+    # print("Extracted access token:", access_token)
+    
+    try:
+        # Delete the session from Redis
+        await redis.delete(access_token)
+        # print("Successfully deleted token from Redis")
+        
+        return {
+            "Status": "Success",
+            "Message": "Successfully logged out"
+        }
+    except Exception as e:
+        # print("Error during logout:", str(e))
+        return {
+            "Status": "ERROR",
+            "Message": "Logout failed",
+            "Details": str(e)
+        }
