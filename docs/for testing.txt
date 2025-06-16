@@ -247,3 +247,4 @@ sample output endpoint @app.get("/job/{job_id}/applicants")
         }
     ]
 }
+

@@ -87,7 +87,7 @@ PWDE-JOB is a specialized job board platform that connects employers with qualif
 
 ## Progress Tracking
 
-### Overall Progress: 61.54% Complete
+### Overall Progress: 75% Complete
 
 ### Completed
 - [x] Project initialization
@@ -101,6 +101,7 @@ PWDE-JOB is a specialized job board platform that connects employers with qualif
 - [x] API endpoints planning
 - [x] Basic profile management
   - Profile viewing
+  - Profile updating
 - [x] Job Management System
   - Create jobs
   - View all jobs
@@ -115,28 +116,37 @@ PWDE-JOB is a specialized job board platform that connects employers with qualif
   - PWD-friendly filtering
 
 ### In Progress
-- [ ] Advanced profile management system
+- [ ] Resume Management System
   - Resume upload
-  - Skills management
-  - Experience tracking
-- [ ] Notification system
-- [ ] Messaging system
+  - PDF processing
+  - Text extraction
+  - File validation
+- [ ] Resume Screening System
+  - Text analysis
+  - Skill matching
+  - Experience detection
+  - Education level detection
+  - Match scoring
+- [ ] Application Status System
+  - Status tracking
+  - Status updates
+  - Status history
+  - Notification triggers
+- [ ] Notification system (Using Supabase Realtime)
+- [ ] Messaging system (Using Supabase Realtime)
 - [ ] Employer dashboard
   - Application analytics
   - Candidate insights
   - Performance metrics
-- [ ] Zoom integration
-- [ ] Resume screening system
-- [ ] Assessment/Test system
-- [ ] Admin/Moderation system
+- [ ] Zoom integration (Using Zoom API directly)
+- [ ] Assessment/Test system (Using Google Forms)
 
 ### Upcoming Features
 - [ ] Password reset system
 - [ ] Email verification
 - [ ] Profile picture upload
 - [ ] Job search and filters
-- [ ] Application tracking
-- [ ] Interview scheduling
+- [ ] Interview scheduling (Using Zoom API)
 
 ## Technical Stack
 - Backend: Python
@@ -159,26 +169,32 @@ PWDE-JOB is a specialized job board platform that connects employers with qualif
 ## Areas for Improvement
 
 ### Authentication System
-1. Fix employer login session storage - currently using wrong key format
-2. Add password requirements (minimum length, special characters, etc.)
-3. Add email verification system
-4. Add "Forgot Password" feature
-5. Add session timeout and auto-logout
+1. Add password requirements (minimum length, special characters, etc.)
+2. Add email verification system
+3. Add "Forgot Password" feature
+4. Add session timeout and auto-logout
+5. Implement rate limiting for login attempts
 
 ### Job Management
-1. Fix job creation endpoint - currently using GET instead of POST
-2. Add required field validation for job posts
-3. Add pagination for job listings (show 10 jobs per page)
-4. Add search and filter options for jobs
-5. Add job application system
-6. Add job status (open/closed/filled)
+1. Add pagination for job listings (show 10 jobs per page)
+2. Add advanced search and filter options for jobs
+3. Add job status (open/closed/filled)
+4. Add job categories and tags
+5. Add job location-based filtering
 
 ### Profile Management
-1. Add profile update feature
-2. Add profile picture upload
-3. Add resume upload system
-4. Fix skills storage - currently stored as text, should be proper list
-5. Add experience and education sections
+1. Add profile picture upload
+2. Add resume upload system with PDF processing
+3. Implement proper skills storage as array
+4. Add experience and education sections
+5. Add profile completion percentage
+
+### Resume Screening
+1. Implement advanced text analysis
+2. Add keyword extraction
+3. Add experience level detection
+4. Add education level detection
+5. Implement more sophisticated matching algorithms
 
 ### Security
 1. Add rate limiting to prevent spam

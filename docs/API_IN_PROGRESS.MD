@@ -4,61 +4,40 @@
   `POST /update-profile/{auth_userID}`
 ---
 
-### 2️ Resume Upload Endpoint
+### 2️ Resume Upload Endpoint - IN PROGRESS
 - **Purpose**: Enable employees to upload, update, or delete their resumes.
 - **Example**:  
-  `POST /upload-resume/{auth_userID}`
+  `POST /upload-resume`
+- **Features**:
+  - PDF file upload
+  - Text extraction
+  - Resume storage
+  - File validation
 
 ---
 
-### 3️ Job Application Endpoint - done
+### 3️ Job Application Endpoint - DONE
 - **Purpose**: Allow employees to apply for jobs and track their applications.
 - **Example**:  
   `POST /apply-job/{job_id}`
 
 ---
 
-### 4️ Job Application History Endpoint
+### 4️ Job Application History Endpoint - DONE
 - **Purpose**: Let employees view the list and status of jobs they have applied to.
 - **Example**:  
   `GET /application-history/{auth_userID}`
 
 ---
 
-### 6️ Job Recommendation Endpoint -DONE
+### 5️ Job Recommendation Endpoint - DONE
 - **Purpose**: Provide personalized job recommendations to employees based on their profile and skills.
 - **Example**:  
   `GET /recommend-jobs/{auth_userID}`
 
 ---
 
-### 7️ Notification Endpoints
-- **Purpose**:  
-  - **Send notifications**: For job matches, application status, interview invites, etc.  
-  - **View notifications**: List all notifications for a user.
-- **Examples**:  
-  - `POST /send-notification`  
-  - `GET /notifications/{auth_userID}`
-
----
-
-### 8️ Messaging Endpoints
-- **Purpose**: Enable direct messaging between employees and employers.
-- **Examples**:  
-  - `POST /send-message`  
-  - `GET /messages/{conversation_id}`
-
----
-
-### 9️ Employer Dashboard Endpoints
-- **Purpose**: View analytics, application statistics, and candidate insights.
-- **Examples**:  
-  - `GET /dashboard/analytics/{employer_id}`  
-  - `GET /dashboard/applications/{employer_id}`
-
----
-
-### 10 Job Management Endpoints -donne
+### 6️ Job Management Endpoints - DONE
 - **Purpose**: Allow employers to create, update, delete, and manage job postings.
 - **Examples**:  
   - `POST /create-job`  
@@ -68,53 +47,71 @@
 
 ---
 
-### 1️1️ Assessment/Test Endpoints
-- **Purpose**: Employers can send assessments to candidates and review results.
-- **Examples**:  
-  - `POST /send-assessment`  
-  - `GET /assessment-results/{candidate_id}`
-
----
-
-### 1️2️ Zoom Integration Endpoints
-- **Purpose**: Schedule and manage video interviews.
-- **Examples**:  
-  - `POST /schedule-zoom-interview`  
-  - `GET /zoom-meetings/{user_id}`
-
----
-
-### 1️3️ Resume Screening Endpoint
-- **Purpose**: Automatically screen and rank resumes for employers.
-- **Example**:  
-  `POST /screen-resume/{job_id}`
-
----
-
-### 1️5️ Password Reset & Email Verification Endpoints
-- **Purpose**: Allow users to reset their password and verify their email.
-- **Examples**:  
-  - `POST /request-password-reset`  
-  - `POST /reset-password`  
-  - `POST /verify-email`
-
----
-
-### 1️6️ Admin/Moderation Endpoints
-- **Purpose**: For admin users to manage users, jobs, and platform content.
-- **Examples**:  
-  - `GET /admin/users`  
-  - `DELETE /admin/delete-user/{user_id}`
-
----
-### 1️7️ View Applicants for a Job Endpoint - Done
+### 7️ View Applicants for a Job Endpoint - DONE
 - **Purpose**: Allow employers to view all applicants for a specific job listing.
 - **Example**:  
   `GET /jobs/{job_id}/applicants`
 
 ---
 
-### 1️8️ Logout Endpoint 
+### 8️ Logout Endpoint - DONE
 - **Purpose**: Allow users to securely logout by deleting their session or token.
 - **Example**:  
   `POST /logout`
+
+---
+
+### 9️ Resume Screening Endpoint - IN PROGRESS
+- **Purpose**: Enable employers to screen and evaluate resumes
+- **Example**:  
+  `POST /screen-resume/{resume_id}`
+- **Features**:
+  - Text analysis
+  - Skill matching
+  - Experience detection
+  - Education level detection
+  - Match scoring
+
+---
+
+### 10️ Application Status Management - IN PROGRESS
+- **Purpose**: Track and update application statuses
+- **Example**:  
+  `PUT /application/{application_id}/status`
+- **Features**:
+  - Status updates (pending, reviewed, accepted, rejected)
+  - Status history
+  - Notification triggers
+
+---
+
+### Third-Party Integrations (No API Endpoints Needed)
+
+#### Assessment System
+- **Implementation**: Google Forms or similar third-party form service
+- **Purpose**: Employers can create and send assessments to candidates
+- **Note**: No need for custom API endpoints as these services provide their own APIs
+
+#### Messaging System
+- **Implementation**: Supabase Realtime or similar service
+- **Purpose**: Enable direct messaging between employees and employers
+- **Note**: Use Supabase's built-in realtime features instead of custom endpoints
+
+#### Notification System
+- **Implementation**: Supabase Realtime or similar service
+- **Purpose**: Send notifications for job matches, application status, etc.
+- **Note**: Use Supabase's built-in notification features
+
+#### Video Interview System
+- **Implementation**: Zoom, Google Meet, or similar service
+- **Purpose**: Schedule and manage video interviews
+- **Note**: Use the service's own API directly from the frontend
+
+---
+
+### Removed Endpoints (Not Needed)
+- ~~Notification Endpoints~~ (Using Supabase Realtime)
+- ~~Messaging Endpoints~~ (Using Supabase Realtime)
+- ~~Zoom Integration Endpoints~~ (Using Zoom API directly)
+- ~~Assessment/Test Endpoints~~ (Using Google Forms or similar)
+- ~~Admin/Moderation Endpoints~~ (Can be handled through Supabase dashboard)
