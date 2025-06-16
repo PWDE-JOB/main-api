@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import File, UploadFile, Depends
 from typing import List
 import json
+from redis_server.redis_client import redis
+from models.model import updateEmployer, updateEmployee, loginCreds, inputSignupEmployer, inputSignupEmployee, jobCreation, updateJob
+import ast
 
 app = FastAPI()
 app.add_middleware(
@@ -50,8 +53,7 @@ async def getAuthUserIdFromRequest(redis, request: Request):
     
     return auth_userID
 
-from models.model import inputSignupEmployee
-from models.model import inputSignupEmployer
+
 #Authentication Process
 
 # Signup for employee and employer
@@ -323,9 +325,7 @@ async def signUp(
 
 
 
-from models.model import loginCreds
-from redis_server.redis_client import redis
-import json
+
 
 #On this login, auth_userID needs to be retrieve on the client side emaning frontend so it can be use on the other endpoints
         
@@ -494,7 +494,7 @@ async def viewProfile(request: Request):
 
 # Profile Update
 #this will update only name, skills, and disability 
-from models.model import updateEmployer, updateEmployee
+
 @app.post("/update-profile/employer")
 async def updateProfile(
     request: Request,
@@ -740,7 +740,7 @@ async def updateProfile(
 
 #create jobs
 # This endpoint is for empployers to be able create jobs, view al jobs listings they created, view a specific job listinsg details, delete, and update
-from models.model import jobCreation
+
 @app.post("/create-jobs")
 async def createJob(job: jobCreation, request: Request):
     try:
@@ -873,8 +873,7 @@ async def deleteJob(request: Request, id: str):
             "Message": "Internal Server Error",
             "Details": f"{e}"
         }
-
-from models.model import updateJob
+        
 @app.post("/update-job/{id}")
 async def updateSpecificJob(request: Request, id: str, job: updateJob):
     try:
@@ -931,7 +930,7 @@ async def updateSpecificJob(request: Request, id: str, job: updateJob):
         }
           
 #MAIN ALGO WORKS (Content absed filtering + collaborative filtering)
-import ast
+
 @app.get("/reco-jobs")
 async def reccomendJobs(request: Request):
     try:
@@ -1049,9 +1048,19 @@ async def applyingForJob(job_id: str, request: Request):
             apply_job = supabase.table("employee_history").update({"applied": True}).eq("job_id", job_id).eq("user_id", auth_userID).execute()
             
             if apply_job.data:
+                supabase_job_data_insertion = create_client(url, service_key)
+                
+                job_data = {
+                    "user_id": auth_userID,
+                    "job_id": job_id,
+                    "status": "under_review"
+                }
+                
+                insert_job_appliead = supabase_job_data_insertion.table("job_applications").insert(job_data).execute()
                 return{
                     "Status": "Successfull",
-                    "Message": f"You applied to job {job_id}"
+                    "Message": f"You applied to job {job_id}",
+                    "Details": insert_job_appliead.data
                 }
             else:
                 return {
@@ -1081,7 +1090,7 @@ async def viewAllApplicantsInJobListing(request: Request, job_id: str):
         check_user = supabase.table("employers").select("user_id").eq("user_id", auth_userID).single().execute()
         
         if check_user.data and check_user.data["user_id"] == auth_userID:
-            get_all_applicants = supabase.table("employee_history").select("*").eq("job_id", job_id).eq("applied", True).execute()
+            get_all_applicants = supabase.table("job_applications").select("*").eq("job_id", job_id).execute()
             
             if get_all_applicants.data:
                 return {
@@ -1090,7 +1099,7 @@ async def viewAllApplicantsInJobListing(request: Request, job_id: str):
                 }
             else:
                 return {
-                    "Status": "Successfull",
+                    "Status": "Error",
                     "Message": "No Applicants"
                 }
         else:
@@ -1195,3 +1204,89 @@ async def uploadResume(request: Request, file: UploadFile = File(...)):
             "Message": "Internal Server Error",
             "Details": str(e)
         }
+
+# 15/06/2025 - Michael the great
+# Currently working on the three endpoinst
+# for the applciation ststus, see hsitory of application, and
+# view applciants
+#
+#
+#
+#
+#
+
+@app.patch("/application/{id}/status")
+async def updateApplicationStatus(request : Request, application_id: str, new_status: str):
+    # check first if the user authticated is an employer or not
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        
+        supabase = create_client(url, service_key)
+        
+        check_user = supabase.table("employers").select("user_id").eq("user_id", auth_userID).single().execute()
+        
+        if check_user.data and check_user.data["user_id"] == auth_userID:
+            status_to_be_changed = supabase.table("job_applications").update({
+                "status": new_status
+            }).eq("id", application_id).execute()
+                        
+            if status_to_be_changed.data:
+                return {
+                    "Status": "Successfull",
+                    "Applicants": status_to_be_changed.data
+                }
+            else:
+                return {
+                    "Status": "Error",
+                    "Message": "Failed updating"
+                }
+        else:
+            return {
+                "Status": "Error",
+                "Message": "User not Found"
+            }
+        
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Inetrnal Error",
+            "Details": f"{e}"
+        }
+
+@app.get("/my-applications")
+async def viewApplicationHistory(request: Request):
+    # check first if the user authticated is an employer or not
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        
+        supabase = create_client(url, key)
+        
+        check_user = supabase.table("employee").select("user_id").eq("user_id", auth_userID).single().execute()
+        
+        if check_user.data and check_user.data["user_id"] == auth_userID:
+            view_all_applciations = supabase.table("job_applications").select("*").eq("user_id", auth_userID).execute()
+            
+            if view_all_applciations.data:
+                return{
+                    "Status": "Successfull",
+                    "Message": view_all_applciations.data
+                }
+            else:
+                return{
+                    "Status": "Error",
+                    "Message": "No Data Found"
+                }
+        else:
+            return {
+                    "Status": "Error",
+                    "Message": "User Can't be found"
+                }    
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Error",
+            "Details": f"{e}"
+        }
+        
+        
+        
