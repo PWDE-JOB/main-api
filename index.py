@@ -32,6 +32,52 @@ async def root ():
     return {"message":"working"}
 
 
+@app.get("/preload")
+async def preload(request: Request):
+    try:
+        # Get the auth user ID from the request
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        supabase = create_client(url, service_key)
+        
+        # Check both employee and employer tables
+        employee_check = supabase.table("employee").select("*").eq("user_id", auth_userID).execute()
+        employer_check = supabase.table("employers").select("*").eq("user_id", auth_userID).execute()
+        
+        if employee_check.data:
+            return {
+                "Status": "Success",
+                "isAuthenticated": True,
+                "role": "employee",
+                "userData": employee_check.data
+            }
+        elif employer_check.data:
+            return {
+                "Status": "Success",
+                "isAuthenticated": True,
+                "role": "employer",
+                "userData": employer_check.data
+            }
+        else:
+            return {
+                "Status": "Error",
+                "isAuthenticated": False,
+                "Message": "User not found in either employee or employer tables"
+            }  
+    except Exception as e:
+        # if "Session not found in Redis" in str(e):
+        #     return {
+        #         "Status": "Error",
+        #         "isAuthenticated": False,
+        #         "Message": "Not authenticated"
+        #     }
+        return {
+            "Status": "Error",
+            "isAuthenticated": False,
+            "Message": f"Internal Server Error: {employee_check.data}",
+            "Details": str(e)
+        }
+
+
 # functions for retriving session or to be speficifc the user ID
 async def getAuthUserIdByToken(redis, access_token):
     value = await redis.get(access_token)
@@ -812,13 +858,13 @@ async def viewAllJobs(request: Request):
         }
 
 @app.get("/view-job/{id}")
-async def viewSpecificJob(request: Request, id: str):
+async def viewSpecificJob(id: str):
     try:
-        auth_userID = await getAuthUserIdFromRequest(redis, request)
+        # auth_userID = await getAuthUserIdFromRequest(redis, request) .eq("user_id", auth_userID)
         
         supabase = create_client(url, key)
         
-        job = supabase.table("jobs").select("*").eq("user_id", auth_userID).eq("id", id).execute()
+        job = supabase.table("jobs").select("*").eq("id", id).execute()
         
         if job:
             return {
@@ -836,7 +882,6 @@ async def viewSpecificJob(request: Request, id: str):
             "Message": "Internal Error",
             "Details": f"{e}"
         }
-
 @app.post("/delete-job/{id}")
 async def deleteJob(request: Request, id: str):
     try:
@@ -1287,6 +1332,67 @@ async def viewApplicationHistory(request: Request):
             "Message": "Internal Error",
             "Details": f"{e}"
         }
+
+
+@app.post("/decline-application/{application_id}")
+async def declineApplication(request: Request, application_id: str):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
         
+        supabase = create_client(url, service_key)
         
+        check_user = supabase.table("employee").select("user_id").eq("user_id", auth_userID).single().execute()
+
+        if check_user.data and check_user.data["user_id"] == auth_userID:
+            decline_application = supabase.table("declined_jobs").insert({
+                "user_id": auth_userID,
+                "job_id": application_id
+            }).execute()
+            
+            if decline_application.data:
+                return {
+                    "Status": "Successfull",
+                    "Message": "Application declined successfully"
+                }
+            else:
+                return {
+                    "Status": "Error",
+                    "Message": "Failed to decline application"
+                }
+        else:
+            return {
+                "Status": "Error",
+                "Message": "User not found"
+            }
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Error",
+            "Details": f"{e}"
+        }
+
+@app.get("/declined-applications")
+async def viewDeclinedApplications(request: Request):
+    try:
+        auth_userID = await getAuthUserIdFromRequest(redis, request)
         
+        supabase = create_client(url, service_key)
+        
+        get_all_declined_applications = supabase.table("declined_jobs").select("*").eq("user_id", auth_userID).execute()
+        
+        if get_all_declined_applications.data:
+            return {
+                "Status": "Successfull",
+                "Message": get_all_declined_applications.data
+            }
+        else:
+            return {
+                "Status": "Error",
+                "Message": "No Data Found"
+            }
+    except Exception as e:
+        return {
+            "Status": "Error",
+            "Message": "Internal Error",
+            "Details": f"{e}"
+        }
